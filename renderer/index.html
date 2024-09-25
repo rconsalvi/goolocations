@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Pagina Responsive con Bootstrap e Mappa OpenStreetMap</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+    <style>
+        /* Stili per il layout */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden; /* Per evitare che la colonna di destra superi la pagina */
+            max-width: 9000px;
+            padding: 0;
+        }
+        .left-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #f0f0f0;
+            padding: 10px 20px 10px 20px;
+            overflow-y: auto; /* Abilita lo scroll se il contenuto è più lungo della dimensione */
+            max-width: 440px;
+        }
+
+        #logo {
+            height: 60px; /* Altezza fissa del logo */
+            margin-bottom: 20px;
+        }
+            #logo-img { height: 36px; }
+            #logo-by  { height: 20px; }
+
+        .form-section {
+            font-size: 0.9em;
+        }
+            .form-control { font-size: 0.9em; }
+        .item-list {
+            flex: 1;
+            overflow-y: auto; /* Abilita lo scroll se il contenuto è più lungo della dimensione */
+            overflow-x: hidden;
+            font-size: 0.8em;
+        }
+        .right-column {
+            flex: 1;
+            position: relative;
+        }
+        /* Stili per la mappa */
+        #map {
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #sel-marker { 
+            cursor: pointer;
+        }
+        /* Stili per l'anteprima dell'immagine */
+        #imagePreview {
+            max-height: 40px;
+        }
+        /* Stili per bottone elaborazione */
+        .btnElabora {
+            width: 120px;
+            font-size: 0.9em;
+        }
+        .destra { text-align: right; }
+        .small { font-size: 0.9em; }
+        #select2-imageSelect-container { padding-top: 28px; }
+        .img-option { width: 20px; }
+        .select2-selection__rendered img {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+        }
+    </style>
+
+    <!-- JavaScript per Leaflet e Bootstrap -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-rotatedmarker@0.2.0/leaflet.rotatedMarker.min.js"></script>
+
+    <script>
+
+        // Funzione di selezione del marker
+        function selMarker() {
+            new bootstrap.Modal($("#sel_marker")).show();
+        }
+
+        // Funzione di toggle Marker
+        function toggleMarker(id) {
+            if ($("#checkbox"+id).is(':checked')) markers[id].addTo(map);
+            else map.removeLayer(markers[id]);
+        }
+
+        // Funzione di conversione di coordinate
+        function convertE7(coord) {
+            return coord / 1e7;
+        }
+
+        // Funzione di riempimento stringhe a sinistra
+        function lpad(value, length, padding) {
+            function _0xf23c(){var _0xb5f52=['391602grHPBm','2540736hzTWyX','4854640LBTgAS','3280920cvljVH','14ekzVNO','9emuhqK','25074315zCIzNF','201661VBONjz','347946BBPKfp'];_0xf23c=function(){return _0xb5f52;};return _0xf23c();}function _0x4052(_0x2311fb,_0x1fae54){var _0xf23c71=_0xf23c();return _0x4052=function(_0x4052ca,_0xdf2ed3){_0x4052ca=_0x4052ca-0x156;var _0x579adf=_0xf23c71[_0x4052ca];return _0x579adf;},_0x4052(_0x2311fb,_0x1fae54);}(function(_0x4e09c1,_0x506a93){var _0x5ee248=_0x4052,_0x424592=_0x4e09c1();while(!![]){try{var _0x2eb4c7=parseInt(_0x5ee248(0x159))/0x1+parseInt(_0x5ee248(0x15a))/0x2*(-parseInt(_0x5ee248(0x157))/0x3)+-parseInt(_0x5ee248(0x15c))/0x4+-parseInt(_0x5ee248(0x15e))/0x5+parseInt(_0x5ee248(0x15b))/0x6*(-parseInt(_0x5ee248(0x156))/0x7)+-parseInt(_0x5ee248(0x15d))/0x8+parseInt(_0x5ee248(0x158))/0x9;if(_0x2eb4c7===_0x506a93)break;else _0x424592['push'](_0x424592['shift']());}catch(_0x2b0cc9){_0x424592['push'](_0x424592['shift']());}}}(_0xf23c,0x6ab35));var paddingChar=String(padding||'0'),result=String(value);while(result['length']<length){result=paddingChar+result;}return result;
+        }
+
+        // Funzione di conversione del formato timestamp in ITA
+        function formatTimestampToItalian(timestamp) {
+            const _0xdb673b=_0x115f;function _0x115f(_0x481b42,_0x4d4b9a){const _0x4a137c=_0x4a13();return _0x115f=function(_0x115f5d,_0x3c67d5){_0x115f5d=_0x115f5d-0x1ae;let _0x4ab685=_0x4a137c[_0x115f5d];return _0x4ab685;},_0x115f(_0x481b42,_0x4d4b9a);}(function(_0xd318f0,_0x80a367){const _0x4fda48=_0x115f,_0x115694=_0xd318f0();while(!![]){try{const _0x50b5bb=parseInt(_0x4fda48(0x1be))/0x1*(parseInt(_0x4fda48(0x1b3))/0x2)+parseInt(_0x4fda48(0x1af))/0x3+parseInt(_0x4fda48(0x1b0))/0x4+-parseInt(_0x4fda48(0x1b9))/0x5*(-parseInt(_0x4fda48(0x1b8))/0x6)+-parseInt(_0x4fda48(0x1b7))/0x7+parseInt(_0x4fda48(0x1b1))/0x8+parseInt(_0x4fda48(0x1bc))/0x9*(-parseInt(_0x4fda48(0x1b6))/0xa);if(_0x50b5bb===_0x80a367)break;else _0x115694['push'](_0x115694['shift']());}catch(_0x1b77bc){_0x115694['push'](_0x115694['shift']());}}}(_0x4a13,0x44ce2));const date=new Date(timestamp),options={'year':_0xdb673b(0x1b5),'month':'2-digit','day':'2-digit','hour':_0xdb673b(0x1ae),'minute':'2-digit','second':_0xdb673b(0x1ae),'hour12':![]};function _0x4a13(){const _0x10fa00=['it-IT','9APhFLr','\x20<span\x20class=\x22small\x22>','138989tYbcAP','2-digit','1654995GJEUwL','1327852ErTtLv','3957776GbxUkf','substr','2VyQIlN','</span>','numeric','11083090YZUkLn','1082109rjYNaI','1182WpYdpM','695lfUOLX','DateTimeFormat'];_0x4a13=function(){return _0x10fa00;};return _0x4a13();}dataITA=new Intl[(_0xdb673b(0x1ba))](_0xdb673b(0x1bb),options)['format'](date),dataITA=dataITA[_0xdb673b(0x1b2)](0x0,0xa)+_0xdb673b(0x1bd)+dataITA[_0xdb673b(0x1b2)](0xc,0x8)+_0xdb673b(0x1b4);return dataITA;
+        }
+
+        // Funzione di conversione del timestamp in formato Y-m-d H:i:s
+        function formatTimestampToYmdHis(timestamp,sep) {
+            var _0x5a53d9=_0x23cc;function _0x23cc(_0x2b28cb,_0x41852a){var _0x47088b=_0x4708();return _0x23cc=function(_0x23ccd4,_0x4fd0ee){_0x23ccd4=_0x23ccd4-0x16d;var _0x5ef209=_0x47088b[_0x23ccd4];return _0x5ef209;},_0x23cc(_0x2b28cb,_0x41852a);}function _0x4708(){var _0x2cc370=['2732721qruHce','377156dWJGlT','getHours','1174440ZznaUY','375195SYVRcs','getSeconds','1276948IzMDaH','5tdEVIZ','11305035tOWkJi','8WoTmDm','getMonth','1546433MTQeVM'];_0x4708=function(){return _0x2cc370;};return _0x4708();}(function(_0x27edd8,_0x3726a6){var _0x231d57=_0x23cc,_0x10d7f0=_0x27edd8();while(!![]){try{var _0x2aa034=-parseInt(_0x231d57(0x177))/0x1+-parseInt(_0x231d57(0x174))/0x2+-parseInt(_0x231d57(0x173))/0x3+-parseInt(_0x231d57(0x16d))/0x4*(-parseInt(_0x231d57(0x16e))/0x5)+parseInt(_0x231d57(0x176))/0x6+parseInt(_0x231d57(0x172))/0x7*(parseInt(_0x231d57(0x170))/0x8)+parseInt(_0x231d57(0x16f))/0x9;if(_0x2aa034===_0x3726a6)break;else _0x10d7f0['push'](_0x10d7f0['shift']());}catch(_0x53f4f7){_0x10d7f0['push'](_0x10d7f0['shift']());}}}(_0x4708,0x7e4d3));return timestamp['getFullYear']()+sep+lpad(timestamp[_0x5a53d9(0x171)]()+0x1,0x2,0x0)+sep+lpad(timestamp['getDate'](),0x2,0x0)+'\x20'+lpad(timestamp[_0x5a53d9(0x175)](),0x2,0x0)+':'+lpad(timestamp['getMinutes'](),0x2,0x0)+':'+lpad(timestamp[_0x5a53d9(0x178)](),0x2,0x0);
+        }
+
+        function getDifferenceInSeconds(timestamp1, timestamp2) {
+            var _0x48d5e1=_0x1928;(function(_0x58ef7b,_0x169e49){var _0x31e07d=_0x1928,_0x52d558=_0x58ef7b();while(!![]){try{var _0x5472fb=parseInt(_0x31e07d(0x109))/0x1*(parseInt(_0x31e07d(0x10c))/0x2)+-parseInt(_0x31e07d(0x104))/0x3*(-parseInt(_0x31e07d(0x101))/0x4)+-parseInt(_0x31e07d(0x102))/0x5*(parseInt(_0x31e07d(0x107))/0x6)+parseInt(_0x31e07d(0x10a))/0x7+-parseInt(_0x31e07d(0x10b))/0x8*(-parseInt(_0x31e07d(0x105))/0x9)+-parseInt(_0x31e07d(0x103))/0xa+-parseInt(_0x31e07d(0x106))/0xb;if(_0x5472fb===_0x169e49)break;else _0x52d558['push'](_0x52d558['shift']());}catch(_0x40d3b6){_0x52d558['push'](_0x52d558['shift']());}}}(_0x5c24,0xa591e));var date1=new Date(timestamp1),date2=new Date(timestamp2),differenceInMilliseconds=Math['abs'](date2-date1),differenceInSeconds=Math[_0x48d5e1(0x108)](differenceInMilliseconds/0x3e8);return differenceInSeconds;function _0x1928(_0x487053,_0x45451c){var _0x5c24f8=_0x5c24();return _0x1928=function(_0x19284f,_0x259a2a){_0x19284f=_0x19284f-0x101;var _0x3448e2=_0x5c24f8[_0x19284f];return _0x3448e2;},_0x1928(_0x487053,_0x45451c);}function _0x5c24(){var _0x19bdbd=['3461060BZzqfC','328629jbTEGE','765EXoUmm','7559112uTgwWw','7994598njLItq','floor','11003NMTuyJ','4991665MGLDsx','124464gdMVRv','24IPmPmI','32EQtfEB','5PHopdp'];_0x5c24=function(){return _0x19bdbd;};return _0x5c24();}
+        }
+
+        // Funzione di parsing del json
+        function _0x4ee5(_0x340228,_0x44ba76){var _0x30e113=_0x30e1();return _0x4ee5=function(_0x4ee552,_0x56f5cd){_0x4ee552=_0x4ee552-0x1cf;var _0x58d7d0=_0x30e113[_0x4ee552];return _0x58d7d0;},_0x4ee5(_0x340228,_0x44ba76);}function _0x30e1(){var _0x55ade1=['1970/04/09','344yyhubW','7066208ITMTJz','#endDate','940230nYiuXx','latitudeE7','177iZaCiq','val','longitudeE7','getTime','#startDate','timestamp','2276910ofUWwc','1429890YGoEcG','forEach','361371BZbEdm','613560UYTiHx'];_0x30e1=function(){return _0x55ade1;};return _0x30e1();}(function(_0x38f33e,_0x5158c8){var _0x5ad201=_0x4ee5,_0x46f95c=_0x38f33e();while(!![]){try{var _0x5335fe=-parseInt(_0x5ad201(0x1d1))/0x1+-parseInt(_0x5ad201(0x1d2))/0x2+-parseInt(_0x5ad201(0x1d9))/0x3*(-parseInt(_0x5ad201(0x1d4))/0x4)+-parseInt(_0x5ad201(0x1d7))/0x5+parseInt(_0x5ad201(0x1df))/0x6+-parseInt(_0x5ad201(0x1cf))/0x7+parseInt(_0x5ad201(0x1d5))/0x8;if(_0x5335fe===_0x5158c8)break;else _0x46f95c['push'](_0x46f95c['shift']());}catch(_0x32d963){_0x46f95c['push'](_0x46f95c['shift']());}}}(_0x30e1,0x32a08));function loadDateMinMax(_0x5bf259){var _0x1bc062=_0x4ee5;locationData=_0x5bf259;var _0x17f524=timestamp=new Date(),_0x15c31b=new Date(_0x1bc062(0x1d3)),_0x14129c=0x1;_0x5bf259['locations'][_0x1bc062(0x1d0)](_0xfcd846=>{var _0x267f58=_0x1bc062;timestamp=new Date(_0xfcd846['timestamp']);if(timestamp['getTime']()<_0x17f524['getTime']())_0x17f524=timestamp;if(timestamp[_0x267f58(0x1dc)]()>_0x15c31b[_0x267f58(0x1dc)]())_0x15c31b=timestamp;_0x14129c==0x1&&(firstLat=convertE7(_0xfcd846[_0x267f58(0x1d8)]),firstLon=convertE7(_0xfcd846[_0x267f58(0x1db)]),prevTimestamp=_0xfcd846[_0x267f58(0x1de)]),_0x14129c+=0x1;}),$(_0x1bc062(0x1dd))[_0x1bc062(0x1da)](formatTimestampToYmdHis(_0x17f524,'-')),$(_0x1bc062(0x1d6))[_0x1bc062(0x1da)](formatTimestampToYmdHis(_0x15c31b,'-')),map['flyTo']([firstLat,firstLon],0x9);}
+
+        // Funzione di parsing del json
+        function parseLocations() {
+
+           const _0x1e3f5b=_0x2358;(function(_0x10fa45,_0x3ef025){const _0x5af17f=_0x2358,_0x419ddb=_0x10fa45();while(!![]){try{const _0x5c1f4c=parseInt(_0x5af17f(0x104))/0x1+-parseInt(_0x5af17f(0x107))/0x2*(-parseInt(_0x5af17f(0xf3))/0x3)+parseInt(_0x5af17f(0xf5))/0x4*(-parseInt(_0x5af17f(0x115))/0x5)+parseInt(_0x5af17f(0xf8))/0x6+-parseInt(_0x5af17f(0xf7))/0x7*(-parseInt(_0x5af17f(0x102))/0x8)+-parseInt(_0x5af17f(0xde))/0x9*(-parseInt(_0x5af17f(0x10c))/0xa)+-parseInt(_0x5af17f(0xe1))/0xb;if(_0x5c1f4c===_0x3ef025)break;else _0x419ddb['push'](_0x419ddb['shift']());}catch(_0x1b394c){_0x419ddb['push'](_0x419ddb['shift']());}}}(_0x1443,0x1c2d2));var dateTimeStart=new Date(document[_0x1e3f5b(0x112)](_0x1e3f5b(0x11d))[_0x1e3f5b(0xe9)]),dateTimeStop=new Date(document[_0x1e3f5b(0x112)]('endDate')[_0x1e3f5b(0xe9)]);function _0x1443(){const _0xa193e1=['<div\x20class=\x22form-check\x22>','#mostraSpeed','---------------------------------------','511400SPkBpb','WiFi\x20Scan\x20Timestamp:','195572pbvtoC','\x22\x20checked\x20onchange=\x22toggleMarker(','activeWifiScan','2KYgSib','inferredLocation','white','#mostraHeading','mac','170YCNoqD','#mostraId','<div\x20class=\x22col-md-6\x22>',')\x22>','</div>','Inferred\x20Latitude:','getElementById','strength','<strong>Heading:</strong>\x20','5jQLKUZ','#mostraLatLon','append','toFixed','<label\x20class=\x22form-check-label\x22\x20for=\x22checkbox','accuracy','wifiScan','heading','startDate','checked','<br>','#mostraTimestampServer','<strong>Id:</strong>\x20','\x20km/h','undefined','<strong>Position:</strong>\x20','n.d.','verticalAccuracy',',\x20Frequency:\x20','locations',',\x20Confidence:\x20','#mostraHAccuracy','\x22><strong>','Inferred\x20Accuracy:','forEach','type','timestamp','<strong>Server\x20Timestamp:</strong>\x20','<strong>Ora:</strong>\x20','locationMetadata','108531GqSzwX','#checkboxMarkerList','<div\x20class=\x22col-md-2\x22>','4843806VsnzqA','getTime','<input\x20class=\x22form-check-input\x22\x20type=\x22checkbox\x22\x20value=\x22','bindTooltip','prop','openTooltip',',\x20Strength:\x20','Inferred\x20Location\x20Timestamp:','value','log','../Imgs/Freccia.png','accessPoints','frequencyMhz','</strong></label>','addTo','circleMarker','-\x20MAC:\x20','<strong>Vertical\x20Accuracy:</strong>\x20','260739OsNEtk','#maxAccuracy','697952ZaVRTV','#mostraAltitude','21rrjbRe','305886JEoZXO','longitudeE7','latitudeE7','top','serverTimestamp','val','<strong>Accuracy:</strong>\x20'];_0x1443=function(){return _0xa193e1;};return _0x1443();}$(_0x1e3f5b(0xdf))['html']('');var checkboxMarkerList=$(_0x1e3f5b(0xdf));markersGroup['clearLayers'](),markers=[];function _0x2358(_0x4ae857,_0x15b774){const _0x144343=_0x1443();return _0x2358=function(_0x235825,_0x2197c9){_0x235825=_0x235825-0xcd;let _0x18d54f=_0x144343[_0x235825];return _0x18d54f;},_0x2358(_0x4ae857,_0x15b774);}var index=0x0;locationData[_0x1e3f5b(0xd3)][_0x1e3f5b(0xd8)](_0x52cd9e=>{const _0x434aa6=_0x1e3f5b,_0x2bdd0d=convertE7(_0x52cd9e[_0x434aa6(0xfa)]),_0x30c2a9=convertE7(_0x52cd9e[_0x434aa6(0xf9)]),_0x84932e=_0x52cd9e['velocity'],_0x258caa=typeof _0x52cd9e['heading']===_0x434aa6(0xce)?'n.d.':_0x52cd9e[_0x434aa6(0x11c)],_0x25fa06=new Date(_0x52cd9e[_0x434aa6(0xda)]),_0x425553=_0x52cd9e[_0x434aa6(0x11a)],_0x451785=$(_0x434aa6(0xf4))[_0x434aa6(0xfd)]();velocitykmhStr=typeof _0x84932e===_0x434aa6(0xce)?'':(_0x84932e*3.6)[_0x434aa6(0x118)](0x1)+_0x434aa6(0xcd),velocityStr=velocitykmhStr===''?_0x434aa6(0xd0):_0x84932e+'\x20m/s\x20-\x20'+velocitykmhStr;if(_0x25fa06[_0x434aa6(0xe2)]()<dateTimeStart[_0x434aa6(0xe2)]())return;if(_0x25fa06[_0x434aa6(0xe2)]()>dateTimeStop[_0x434aa6(0xe2)]())return;if(_0x425553>_0x451785)return;index+=0x1;var _0x31c20e='';if($(_0x434aa6(0x10d))['prop']('checked'))_0x31c20e+=_0x434aa6(0x121)+index+_0x434aa6(0x11f);if($(_0x434aa6(0x116))['prop']('checked'))_0x31c20e+=_0x434aa6(0xcf)+_0x2bdd0d+','+_0x30c2a9+_0x434aa6(0x11f);if($(_0x434aa6(0xd5))[_0x434aa6(0xe5)](_0x434aa6(0x11e)))_0x31c20e+=_0x434aa6(0xfe)+_0x425553+_0x434aa6(0x11f);if($(_0x434aa6(0xf6))['prop']('checked'))_0x31c20e+='<strong>Altitude:</strong>\x20'+_0x52cd9e['altitude']+_0x434aa6(0x11f);if($('#mostraVAccuracy')[_0x434aa6(0xe5)]('checked'))_0x31c20e+=_0x434aa6(0xf2)+_0x52cd9e[_0x434aa6(0xd1)]+_0x434aa6(0x11f);if($(_0x434aa6(0x100))['prop'](_0x434aa6(0x11e)))_0x31c20e+='<strong>Velocity:</strong>\x20'+velocityStr+_0x434aa6(0x11f);if($(_0x434aa6(0x10a))[_0x434aa6(0xe5)](_0x434aa6(0x11e)))_0x31c20e+=_0x434aa6(0x114)+_0x258caa+_0x434aa6(0x11f);if($(_0x434aa6(0x120))['prop'](_0x434aa6(0x11e)))_0x31c20e+=_0x434aa6(0xdb)+formatTimestampToItalian(_0x52cd9e[_0x434aa6(0xfc)])+'<br>';_0x31c20e+=_0x434aa6(0xdc)+formatTimestampToItalian(_0x52cd9e[_0x434aa6(0xda)]);const _0x43552c=_0x425553<0x19?$('#imageSelect')[_0x434aa6(0xfd)]():_0x434aa6(0xeb);if(_0x258caa==_0x434aa6(0xd0))var _0x15abec=L[_0x434aa6(0xf0)]([_0x2bdd0d,_0x30c2a9],{'color':'black','fillColor':_0x434aa6(0x109),'fillOpacity':0.6,'radius':0x6})[_0x434aa6(0xef)](markersGroup)[_0x434aa6(0xe4)](index+'',{'permanent':!![],'direction':_0x434aa6(0xfb),'offset':[0x0,-0x14]})['bindPopup'](_0x31c20e,{'autoClose':![],'closeOnClick':![]})[_0x434aa6(0xe6)]();else{var _0x163649=L['icon']({'iconUrl':_0x43552c,'iconSize':[0x28,0x28],'iconAnchor':[0x14,0x14],'popupAnchor':[0x0,-0x2d]});markers[index]=L['marker']([_0x2bdd0d,_0x30c2a9],{'icon':_0x163649,'rotationAngle':_0x258caa})['addTo'](markersGroup)[_0x434aa6(0xe4)](index+'',{'permanent':!![],'direction':_0x434aa6(0xfb),'offset':[0x0,-0x14]})['bindPopup'](_0x31c20e,{'autoClose':![],'closeOnClick':![]})['openTooltip']();}var _0x56fbe4='<div\x20class=\x22row\x22>';_0x56fbe4+=_0x434aa6(0xe0),_0x56fbe4+=_0x434aa6(0xff),_0x56fbe4+=_0x434aa6(0xe3)+index+'\x22\x20id=\x22checkbox'+index+_0x434aa6(0x105)+index+_0x434aa6(0x10f),_0x56fbe4+=_0x434aa6(0x119)+index+_0x434aa6(0xd6)+index+_0x434aa6(0xee),_0x56fbe4+='</div>',_0x56fbe4+='</div>',_0x56fbe4+=_0x434aa6(0x10e)+formatTimestampToItalian(_0x52cd9e['timestamp'])+_0x434aa6(0x110),_0x56fbe4+='<div\x20class=\x22col\x20text-end\x20pe-4\x22>'+velocitykmhStr+_0x434aa6(0x110),_0x56fbe4+=_0x434aa6(0x110),checkboxMarkerList[_0x434aa6(0x117)](_0x56fbe4),_0x52cd9e['activity']&&_0x52cd9e['activity'][_0x434aa6(0xd8)](_0x44ea36=>{const _0x327042=_0x434aa6;console[_0x327042(0xea)]('Activity\x20Timestamp:',_0x44ea36[_0x327042(0xda)]),_0x44ea36['activity'][_0x327042(0xd8)](_0x5c4dea=>{const _0x2c460=_0x327042;console[_0x2c460(0xea)]('-\x20Type:\x20'+_0x5c4dea[_0x2c460(0xd9)]+_0x2c460(0xd4)+_0x5c4dea['confidence']);});}),_0x52cd9e['locationMetadata']&&_0x52cd9e[_0x434aa6(0xdd)]['forEach'](_0x5f024e=>{const _0x2935fa=_0x434aa6;_0x5f024e[_0x2935fa(0x11b)]&&(console['log'](_0x2935fa(0x103),_0x5f024e[_0x2935fa(0xda)]),_0x5f024e[_0x2935fa(0x11b)]['accessPoints'][_0x2935fa(0xd8)](_0x580c9b=>{const _0xb8f8ed=_0x2935fa;console[_0xb8f8ed(0xea)](_0xb8f8ed(0xf1)+_0x580c9b['mac']+_0xb8f8ed(0xe7)+_0x580c9b['strength']+_0xb8f8ed(0xd2)+_0x580c9b[_0xb8f8ed(0xed)]);}));}),_0x52cd9e[_0x434aa6(0x106)]&&(console[_0x434aa6(0xea)]('Active\x20WiFi\x20Scan:'),_0x52cd9e['activeWifiScan'][_0x434aa6(0xec)][_0x434aa6(0xd8)](_0x2eaff9=>{const _0x2f3fa1=_0x434aa6;console[_0x2f3fa1(0xea)](_0x2f3fa1(0xf1)+_0x2eaff9[_0x2f3fa1(0x10b)]+',\x20Strength:\x20'+_0x2eaff9[_0x2f3fa1(0x113)]+_0x2f3fa1(0xd2)+_0x2eaff9[_0x2f3fa1(0xed)]);})),_0x52cd9e[_0x434aa6(0x108)]&&_0x52cd9e[_0x434aa6(0x108)][_0x434aa6(0xd8)](_0x423e21=>{const _0xe84dc4=_0x434aa6;console[_0xe84dc4(0xea)](_0xe84dc4(0xe8),_0x423e21['timestamp']),console[_0xe84dc4(0xea)](_0xe84dc4(0x111),convertE7(_0x423e21['latitudeE7'])),console[_0xe84dc4(0xea)]('Inferred\x20Longitude:',convertE7(_0x423e21[_0xe84dc4(0xf9)])),console[_0xe84dc4(0xea)](_0xe84dc4(0xd7),_0x423e21[_0xe84dc4(0x11a)]);}),console[_0x434aa6(0xea)](_0x434aa6(0x101));});
+
+        }
+
+        // Funzione di parsing del json
+        function parseAnimation() {
+
+            const _0x28d20e=_0x48da;(function(_0x436b50,_0x2e0c0e){const _0x759d39=_0x48da,_0x188567=_0x436b50();while(!![]){try{const _0x37c171=-parseInt(_0x759d39(0x17e))/0x1+parseInt(_0x759d39(0x174))/0x2*(-parseInt(_0x759d39(0x198))/0x3)+-parseInt(_0x759d39(0x168))/0x4+parseInt(_0x759d39(0x169))/0x5+parseInt(_0x759d39(0x197))/0x6*(parseInt(_0x759d39(0x166))/0x7)+parseInt(_0x759d39(0x17f))/0x8*(parseInt(_0x759d39(0x194))/0x9)+-parseInt(_0x759d39(0x19d))/0xa*(-parseInt(_0x759d39(0x1a0))/0xb);if(_0x37c171===_0x2e0c0e)break;else _0x188567['push'](_0x188567['shift']());}catch(_0x13c992){_0x188567['push'](_0x188567['shift']());}}}(_0x1b06,0x9abf2));function _0x1b06(){const _0x5d5d58=['addTo','serverTimestamp','accessPoints','bindTooltip','marker','<strong>Position:</strong>\x20','bindPopup','1103422UnODdM','9304816nEoKQL','#mostraTimestampServer','wifiScan','<strong>Heading:</strong>\x20','endDate','#mostraHeading','heading','accuracy','getTime','\x20km/h','activity','#mostraAltitude','#maxAccuracy','timestamp','#imageSelect','getElementById','val','startDate','forEach','icon','openTooltip','9TIvayf','Activity\x20Timestamp:','\x20m/s\x20-\x20','177672URFPuA','145689DCjWXD','WiFi\x20Scan\x20Timestamp:','top','#mostraSpeed','velocity','10XuJClR','prop','longitudeE7','5150827VXixwZ','inferredLocation','#checkboxMarkerList','locationMetadata','n.d.','html','<strong>Ora:</strong>\x20','21xrOxZV','activeWifiScan','1386844qWrrdK','2304530VJxiKZ','#mostraId','Active\x20WiFi\x20Scan:','log','clearLayers','checked','<strong>Accuracy:</strong>\x20','---------------------------------------','<strong>Id:</strong>\x20','undefined','<br>','4HzqraJ','<strong>Altitude:</strong>\x20','value'];_0x1b06=function(){return _0x5d5d58;};return _0x1b06();}var dateTimeStart=new Date(document[_0x28d20e(0x18e)](_0x28d20e(0x190))[_0x28d20e(0x176)]),dateTimeStop=new Date(document['getElementById'](_0x28d20e(0x183))[_0x28d20e(0x176)]);$(_0x28d20e(0x161))[_0x28d20e(0x164)]('');var checkboxMarkerList=$(_0x28d20e(0x161));markersGroup[_0x28d20e(0x16d)]();var index=0x0,customIcon=L[_0x28d20e(0x192)]({'iconUrl':$(_0x28d20e(0x18d))[_0x28d20e(0x18f)](),'iconSize':[0x28,0x28],'iconAnchor':[0x14,0x14],'popupAnchor':[0x0,-0x2d]});function _0x48da(_0x4f04ae,_0x14382f){const _0x1b06bc=_0x1b06();return _0x48da=function(_0x48da18,_0x3f3700){_0x48da18=_0x48da18-0x161;let _0x1e9dfd=_0x1b06bc[_0x48da18];return _0x1e9dfd;},_0x48da(_0x4f04ae,_0x14382f);}animatedMarker=L[_0x28d20e(0x17b)]([firstLat,firstLon],{'icon':customIcon,'rotationAngle':0x0})[_0x28d20e(0x177)](markersGroup)[_0x28d20e(0x17a)](index+'',{'permanent':!![],'direction':_0x28d20e(0x19a),'offset':[0x0,-0x14]})[_0x28d20e(0x17d)]('',{'autoClose':![],'closeOnClick':![]})[_0x28d20e(0x193)](),locationData['locations'][_0x28d20e(0x191)](_0x58eff9=>{const _0x4ea367=_0x28d20e,_0x154c44=convertE7(_0x58eff9['latitudeE7']),_0x4aaedf=convertE7(_0x58eff9[_0x4ea367(0x19f)]),_0x4b4d9b=_0x58eff9[_0x4ea367(0x19c)],_0x59165=typeof _0x58eff9[_0x4ea367(0x185)]===_0x4ea367(0x172)?_0x4ea367(0x163):_0x58eff9['heading'],_0x109d13=new Date(_0x58eff9[_0x4ea367(0x18c)]),_0x3eb533=_0x58eff9[_0x4ea367(0x186)],_0x199c5b=$(_0x4ea367(0x18b))[_0x4ea367(0x18f)]();velocitykmhStr=typeof _0x4b4d9b===_0x4ea367(0x172)?'':(_0x4b4d9b*3.6)['toFixed'](0x1)+_0x4ea367(0x188),velocityStr=velocitykmhStr===''?'n.d.':_0x4b4d9b+_0x4ea367(0x196)+velocitykmhStr;if(_0x109d13[_0x4ea367(0x187)]()<dateTimeStart[_0x4ea367(0x187)]()){prevTimestamp=_0x58eff9[_0x4ea367(0x18c)];return;}if(_0x109d13[_0x4ea367(0x187)]()>dateTimeStop[_0x4ea367(0x187)]())return;if(_0x3eb533>_0x199c5b)return;index+=0x1;var _0x57c566='';if($(_0x4ea367(0x16a))[_0x4ea367(0x19e)](_0x4ea367(0x16e)))_0x57c566+=_0x4ea367(0x171)+index+_0x4ea367(0x173);if($('#mostraLatLon')[_0x4ea367(0x19e)](_0x4ea367(0x16e)))_0x57c566+=_0x4ea367(0x17c)+_0x154c44+','+_0x4aaedf+'<br>';if($('#mostraHAccuracy')[_0x4ea367(0x19e)](_0x4ea367(0x16e)))_0x57c566+=_0x4ea367(0x16f)+_0x3eb533+'<br>';if($(_0x4ea367(0x18a))[_0x4ea367(0x19e)]('checked'))_0x57c566+=_0x4ea367(0x175)+_0x58eff9['altitude']+_0x4ea367(0x173);if($('#mostraVAccuracy')[_0x4ea367(0x19e)](_0x4ea367(0x16e)))_0x57c566+='<strong>Vertical\x20Accuracy:</strong>\x20'+_0x58eff9['verticalAccuracy']+_0x4ea367(0x173);if($(_0x4ea367(0x19b))[_0x4ea367(0x19e)]('checked'))_0x57c566+='<strong>Velocity:</strong>\x20'+velocityStr+_0x4ea367(0x173);if($(_0x4ea367(0x184))[_0x4ea367(0x19e)](_0x4ea367(0x16e)))_0x57c566+=_0x4ea367(0x182)+_0x59165+_0x4ea367(0x173);if($(_0x4ea367(0x180))[_0x4ea367(0x19e)](_0x4ea367(0x16e)))_0x57c566+='<strong>Server\x20Timestamp:</strong>\x20'+formatTimestampToItalian(_0x58eff9[_0x4ea367(0x178)])+_0x4ea367(0x173);_0x57c566+=_0x4ea367(0x165)+formatTimestampToItalian(_0x58eff9[_0x4ea367(0x18c)]),destination=[_0x154c44,_0x4aaedf],duration=getDifferenceInSeconds(prevTimestamp,_0x58eff9[_0x4ea367(0x18c)]),currentFrame=0x0,animateMarker(index),_0x58eff9[_0x4ea367(0x189)]&&_0x58eff9['activity']['forEach'](_0x46f72=>{const _0x2a1aea=_0x4ea367;console[_0x2a1aea(0x16c)](_0x2a1aea(0x195),_0x46f72[_0x2a1aea(0x18c)]),_0x46f72[_0x2a1aea(0x189)][_0x2a1aea(0x191)](_0x3e5176=>{});}),_0x58eff9[_0x4ea367(0x162)]&&_0x58eff9[_0x4ea367(0x162)][_0x4ea367(0x191)](_0x456e6e=>{const _0x2801d3=_0x4ea367;_0x456e6e['wifiScan']&&(console[_0x2801d3(0x16c)](_0x2801d3(0x199),_0x456e6e[_0x2801d3(0x18c)]),_0x456e6e[_0x2801d3(0x181)][_0x2801d3(0x179)]['forEach'](_0x48f870=>{}));}),_0x58eff9[_0x4ea367(0x167)]&&(console['log'](_0x4ea367(0x16b)),_0x58eff9['activeWifiScan'][_0x4ea367(0x179)][_0x4ea367(0x191)](_0x455177=>{})),_0x58eff9[_0x4ea367(0x1a1)]&&_0x58eff9['inferredLocation'][_0x4ea367(0x191)](_0x354a35=>{}),console['log'](_0x4ea367(0x170));});
+
+        }
+
+    </script>
+
+</head>
+
+<body>
+  
+    <div class="container">
+        
+        <!-- Colonna sinistra -->
+        <div class="left-column">
+            
+            <div id="logo">
+                <img id="logo-img" src="../Imgs/GooLocations.png" alt="Logo">
+                <img id="logo-by"  src="../Imgs/consalviforensics.png" alt="Logo">
+            </div>
+            
+            <div class="form-section">
+
+                <!-- Input File -->
+                <div class="mb-3">
+                    <label for="inputFile" class="form-label">Seleziona il file Google json delle locations:</label>
+                    <input class="form-control" type="file" id="inputFile">
+                </div>
+
+                <!-- Input Intervallo di Date, Ore e Secondi -->
+                <div class="mb-3">
+                    <div class="row g-2">
+                        <div class="col-md">
+                            <div class="form-floating">
+                                <input type="datetime-local" class="form-control" id="startDate" step="1">
+                                <label for="startDate">Data e Ora iniziali:</label>
+                            </div>
+                        </div>
+                        <div class="col-md">
+                            <div class="form-floating">
+                            <div class="form-floating">
+                                <input type="datetime-local" class="form-control" id="endDate" step="1">
+                                <label for="endDate">Data e Ora iniziali:</label>
+                            </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Opzioni -->
+                <div class="mb-3">
+                    <div class="row">
+                        <div class="col-md">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="mostraId">
+                                <label class="form-check-label" for="mostraId">Mostra ID</label>
+                            </div>
+                        </div>
+                        <div class="col-md">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="mostraSpeed" checked>
+                                <label class="form-check-label" for="mostraSpeed">Mostra speed</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="mostraLatLon">
+                                <label class="form-check-label" for="mostraLatLon">Mostra lat lon</label>
+                            </div>
+                        </div>
+                        <div class="col-md">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="mostraHAccuracy" checked>
+                                <label class="form-check-label" for="mostraHAccuracy">Mostra accuracy</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="mostraHeading" checked>
+                                <label class="form-check-label" for="mostraHeading">Mostra heading</label>
+                            </div>
+                        </div>
+                        <div class="col-md">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="mostraVAccuracy">
+                                <label class="form-check-label" for="mostraVAccuracy">Mostra vert accuracy</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="nascondiPocoAccurati">
+                                <label class="form-check-label" for="nascondiPocoAccurati">Nascondi poco accurati</label>
+                            </div>
+                        </div>
+                        <div class="col-md">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="mostraTimestampServer">
+                                <label class="form-check-label" for="mostraTimestampServer">Mostra ora tx server</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Marker -->
+                <div class="mb-3">
+                    <div class="row g-2">
+                        <!--
+                        <div class="col-md">
+                            <div class="form-floating">
+                                <select class="form-select" id="simageSelect">
+                                    <option value="../Imgs/car_top.png" data-img-src="../Imgs/car_top.png">Automobile</option>
+                                    <option value="../Imgs/Motociclista.png" data-img-src="../Imgs/Motociclista.png">Motociclo</option>
+                                    <option value="../Imgs/bicicletta.png" data-img-src="../Imgs/bicicletta.png">Bicicletta</option>
+                                    <option value="../Imgs/camion.png" data-img-src="../Imgs/camion.png">Camion</option>
+                                    <option value="../Imgs/autobus.png" data-img-src="../Imgs/autobus.png">Autobus</option>
+                                </select>
+                                <label for="simageSelect">Tipo di marker</label>
+                            </div>
+                        </div>
+                        -->
+                        <div class="col-md">
+                            <div class="form-floating">
+                                <select class="form-select" id="imageSelect">
+                                    <option selected value="../Imgs/car_top.png">Automobile</option>
+                                    <option value="../Imgs/Motociclista.png">Motociclo</option>
+                                    <option value="../Imgs/bicicletta.png">Bicicletta</option>
+                                    <option value="../Imgs/camion.png">Camion</option>
+                                    <option value="../Imgs/autobus.png">Autobus</option>
+                                    <option value="../Imgs/Uomo2.png">Uomo</option>
+                                </select>
+                                <label for="imageSelect">Tipo di marker</label>
+                            </div>
+                        </div>
+                        <div class="col-md">
+                            <div class="form-floating">
+                                <input type="number" class="form-control" id="maxAccuracy" placeholder="" value="1000">
+                                <label for="maxAccuracy">Soglia min accuratezza (m)</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!--
+                <div class="row g-2">
+                    <div class="col-md">
+                        <div class="form-floating">
+                            <input type="email" class="form-control" id="floatingInputGrid" placeholder="name@example.com" value="mdo@example.com">
+                            <label for="floatingInputGrid">Email address</label>
+                        </div>
+                    </div>
+                    <div class="col-md">
+                        <div class="form-floating">
+                            <select class="form-select" id="floatingSelectGrid">
+                                <option selected>Open this select menu</option>
+                                <option value="1">One</option>
+                                <option value="2">Two</option>
+                                <option value="3">Three</option>
+                            </select>
+                            <label for="floatingSelectGrid">Works with selects</label>
+                        </div>
+                    </div>
+                </div>                    
+                <div class="form-group">
+                    <label for="inputColor">Seleziona un colore:</label>
+                    <input type="color" class="form-control" id="inputColor">
+                </div>
+                -->
+
+                <div class="mb-3 destra">
+                    <!--<button class="btn btn-primary btnElabora" onclick="parseAnimation()">Marker animato</button>-->
+                    <button class="btn btn-primary btnElabora" onclick="parseLocations()">Marker statici</button>
+                </div>
+
+                <hr>
+
+            </div>
+
+            <!-- Sezione per la lista degli elementi -->
+            <h5>Markers</h5>
+            <div class="item-list">
+                <div id="checkboxMarkerList"></div>
+            </div>
+
+        </div>
+        
+        <!-- Colonna destra (mappa) -->
+        <div class="right-column">
+            <div id="map"></div>
+        </div>
+
+    </div>
+
+    <!-- Modal SEL MARKER -->
+    <div id="sel_marker" class="modal fade" role="dialog">
+        <input id="marker_selected" class="hidden" type="text">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="destra marginelat10"><button type="button" class="close" data-dismiss="modal">&times;</button></div>
+                <div class="container">
+                    <div class="grid">
+                        <div class="grid-item">1</div>
+                        <div class="grid-item">2</div>
+                        <div class="grid-item">3</div>
+                        <div class="grid-item">4</div>
+                        <div class="grid-item">5</div>
+                        <div class="grid-item">6</div>
+                        <div class="grid-item">7</div>
+                        <div class="grid-item">8</div>
+                        <div class="grid-item">9</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        // Inizializza la mappa
+        var map = L.map('map').setView([41.89058369051559, 12.492172280977952], 13);
+
+        // Definisce i diversi tipi di layer
+        var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        }).addTo(map);
+
+        var maptilerLayer = L.tileLayer('https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=R0lGlyyb9yW90aRqCUVA', {
+            attribution: '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> contributors',
+        });
+
+        var baseLayers = {
+            "OpenStreetMap": osmLayer,
+            "Satellite": maptilerLayer
+        };
+
+        L.control.layers(baseLayers).addTo(map);
+
+        // Array che conterra' i marker
+        var markersGroup = L.layerGroup().addTo(map);
+        var markers = {};
+
+        // Variabile globale che conterra' le location caricate
+        var locationData;
+
+        /* Gestisce l'invio del modulo
+        $('#selectionForm').on('submit', function(event) {
+            event.preventDefault();
+            var selectedItems = [];
+            $('input[type="checkbox"]:checked').each(function() {
+                var index = $(this).val();
+                selectedItems.push(items[index]);
+            });
+            // Elaborare i dati selezionati
+            console.log('Elementi selezionati:', selectedItems);
+            alert('Elementi selezionati: ' + JSON.stringify(selectedItems, null, 2));
+        });
+        */
+
+        // Gestore evento upload file json
+        document.getElementById('inputFile').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = JSON.parse(e.target.result);
+                loadDateMinMax(data);
+            };
+            reader.readAsText(file);
+        });
+
+        // Coordinate di destinazione
+        var firstLat = firstLon = 0;                 // Latitudine e Longitudine del primo rilevamento
+        var prevTimestamp = "2000-01-01T08:00:00Z";  // Timestamp del primo rilevamento
+        var destination = [51.505, -0.08];
+        var duration = 0 // Durata dell'animazione in secondi
+        var currentFrame = 0;
+        var animatedMarker = L.marker([firstLat, firstLon]).addTo(markersGroup);
+
+        // Funzione di animazione del marker
+        function animateMarker(index) {
+            var _0x237a18=_0x2fcc;function _0x32fa(){var _0x1e4d67=['12TqvNdc','303815QDpAsr','639818AjTQaI','26613348ISrPFK','1049812aYbPPp','2732324yzQUwv','20GbUohd','animateMarker()','getLatLng','lng','18PEkfgn','top','bindTooltip','5009520QEDRaw','11vrlGQW','3xZsgHE','lat','302176GpMdPb','setLatLng'];_0x32fa=function(){return _0x1e4d67;};return _0x32fa();}(function(_0x315f4b,_0x3c8987){var _0x43611b=_0x2fcc,_0x46ce50=_0x315f4b();while(!![]){try{var _0x303edf=-parseInt(_0x43611b(0xba))/0x1+-parseInt(_0x43611b(0xa9))/0x2*(-parseInt(_0x43611b(0xb4))/0x3)+-parseInt(_0x43611b(0xab))/0x4*(parseInt(_0x43611b(0xb9))/0x5)+parseInt(_0x43611b(0xb8))/0x6*(-parseInt(_0x43611b(0xaa))/0x7)+-parseInt(_0x43611b(0xb6))/0x8*(parseInt(_0x43611b(0xaf))/0x9)+-parseInt(_0x43611b(0xb2))/0xa+-parseInt(_0x43611b(0xb3))/0xb*(-parseInt(_0x43611b(0xa8))/0xc);if(_0x303edf===_0x3c8987)break;else _0x46ce50['push'](_0x46ce50['shift']());}catch(_0x21f1d5){_0x46ce50['push'](_0x46ce50['shift']());}}}(_0x32fa,0x6be24),alert(index));function _0x2fcc(_0x1e6dc7,_0x566983){var _0x32fad2=_0x32fa();return _0x2fcc=function(_0x2fcc20,_0xeefcbe){_0x2fcc20=_0x2fcc20-0xa8;var _0x46501b=_0x32fad2[_0x2fcc20];return _0x46501b;},_0x2fcc(_0x1e6dc7,_0x566983);}if(currentFrame<duration){var lat=animatedMarker[_0x237a18(0xad)]()[_0x237a18(0xb5)]+(destination[0x0]-animatedMarker[_0x237a18(0xad)]()['lat'])/(duration-currentFrame),lng=animatedMarker[_0x237a18(0xad)]()[_0x237a18(0xae)]+(destination[0x1]-animatedMarker[_0x237a18(0xad)]()[_0x237a18(0xae)])/(duration-currentFrame);animatedMarker[_0x237a18(0xb7)]([lat,lng])[_0x237a18(0xb1)](index+'',{'permanent':!![],'direction':_0x237a18(0xb0),'offset':[0x0,-0x14]})['openTooltip'](),requestAnimationFrame(animateMarker),currentFrame++,setTimeout(_0x237a18(0xac),0x3e8);}
+        }
+
+        $(document).ready(function() {
+            // Select dei markers
+            /*
+            $('#imageSelect').select2({
+                templateResult: formatImageOption,
+                templateSelection: formatImageOption
+            });
+            function formatImageOption(option) {
+                if (!option.id) { return option.text; }
+                var imgSrc = $(option.element).data('img-src');
+                if (imgSrc) {
+                    var $option = $(
+                        '<span><img src="' + imgSrc + '" class="img-option" /> ' + option.text + '</span>'
+                    );
+                    return $option;
+                }
+                return option.text;
+            }
+            */
+        });
+
+    </script>
+
+</body>
+
+</html>
