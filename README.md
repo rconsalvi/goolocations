@@ -12,7 +12,8 @@ Italy
 
 ## Overview
 
-This project is a **parser for Google Takeout geolocation files** that provides a **graphical representation** of positions and related information. It uses **OpenStreetMap (OSM)** to display **markers on road or satellite maps** and allows users to visualize the geolocation data captured by Google services. 
+This project is a **parser for Google Takeout geolocation files** that provides a **graphical representation** of positions and related information. 
+It uses **OpenStreetMap (OSM)** to display **markers on road or satellite maps** and allows users to visualize the geolocation data captured by Google services. 
 
 Users can **filter the displayed information** based on various parameters, such as:
 - **Time interval** of observation
@@ -44,8 +45,8 @@ Additionally, the **markers**, which can be customized (e.g., car, bicycle, truc
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/google-takeout-geolocation-parser.git
-   cd google-takeout-geolocation-parser
+   git clone https://github.com/rconsalvi/goolocations.git
+   cd goolocations
    ```
 
 2. Install dependencies (if applicable):
